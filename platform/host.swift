@@ -39,7 +39,7 @@ func getStrLen(rocStr: RocStr) -> Int {
     }
 }
 
-func getSwiftString(rocStr: RocStr) -> String {
+func getSwiftStr(rocStr: RocStr) -> String {
     let length = getStrLen(rocStr: rocStr)
 
     if isSmallString(rocStr: rocStr) {
@@ -53,13 +53,26 @@ func getSwiftString(rocStr: RocStr) -> String {
     }
 }
 
+func getRocStr(swiftStr: String) -> RocStr {
+    let newString = strdup(swiftStr)
+
+    return RocStr(
+        bytes: newString,
+        len: swiftStr.lengthOfBytes(using: String.Encoding.utf8),
+        capacity: swiftStr.lengthOfBytes(using: String.Encoding.utf8)
+    )
+}
+
 struct ContentView: View {
     var str: String
 
     init() {
-        var rocStr = RocStr()
-        roc__mainForHost_1_exposed_generic(&rocStr)
-        self.str = getSwiftString(rocStr: rocStr)
+        var argRocStr = getRocStr(swiftStr: "Swift")
+        var retRocStr = RocStr()
+
+        roc__mainForHost_1_exposed_generic(&retRocStr, &argRocStr)
+
+        self.str = getSwiftStr(rocStr: retRocStr)
     }
 
     var body: some View {

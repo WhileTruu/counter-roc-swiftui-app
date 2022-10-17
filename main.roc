@@ -3,4 +3,4 @@ app "calculator-swiftui-app"
     imports []
     provides [main] to pf
 
-main = "Roc <3 Swiuft!\n"
+main = \a -> "Roc <3 \(a)!"
