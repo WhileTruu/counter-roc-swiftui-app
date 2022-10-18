@@ -1,6 +1,7 @@
 app "calculator-swiftui-app"
     packages { pf: "platform/main.roc" }
-    imports []
+    imports [pf.Elem.{ TextElem }]
     provides [main] to pf
 
-main = \a -> "Roc <3 \(a)!"
+main : Str -> TextElem
+main = \a -> Elem.text "Roc <3 \(a)!"

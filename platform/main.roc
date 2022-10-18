@@ -1,10 +1,10 @@
 platform "swiftui-platform"
-    requires {} { main : Str -> Str }
+    requires {} { main : Str -> TextElem }
     exposes []
     packages {}
-    imports []
+    imports [Elem.{ TextElem }]
     provides [mainForHost]
 
-mainForHost : Box Str -> Str
+mainForHost : Box Str -> TextElem
 mainForHost = \a -> main (Box.unbox a)
 

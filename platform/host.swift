@@ -68,11 +68,12 @@ struct ContentView: View {
 
     init() {
         var argRocStr = getRocStr(swiftStr: "Swift")
-        var retRocStr = RocStr()
+        var retRocElem = RocTextElem()
 
-        roc__mainForHost_1_exposed_generic(&retRocStr, &argRocStr)
+        roc__mainForHost_1_exposed_generic(&retRocElem, &argRocStr)
 
-        self.str = getSwiftStr(rocStr: retRocStr)
+        print("elem! \(getSwiftStr(rocStr: retRocElem.text))")
+        self.str = getSwiftStr(rocStr: retRocElem.text)
     }
 
     var body: some View {
