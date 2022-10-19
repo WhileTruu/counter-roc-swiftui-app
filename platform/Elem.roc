@@ -1,9 +1,9 @@
 interface Elem
-  exposes [TextElem, text]
+  exposes [Elem, text]
   imports []
 
-TextElem : [ TextElem { text : Str } ]
+Elem : [ TextElem { text : Str } ]
 
-text : Str -> TextElem
+text : Str -> Elem
 text = \str ->
     TextElem { text : str }
