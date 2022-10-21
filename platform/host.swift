@@ -112,19 +112,19 @@ struct ContentView: View {
         var retRocElem = RocElem()
         roc__mainForHost_1_exposed_generic(&retRocElem, &argRocStr)
         print("\nelem1 \(retRocElem)")
-        yolo(label: "retRocElem 1", rocElem: &retRocElem)
+        print(getTagId(rocElem: retRocElem))
 
         var argRocStr2 = getRocStr(swiftStr: "Swiftyyyyyyyyyyyyyyyyyyyyyyyyyyy")
         var retRocElem2 = RocElem()
         roc__mainForHost_1_exposed_generic(&retRocElem2, &argRocStr2)
         print("\nelem2 \(retRocElem2)")
-        yolo(label: "retRocElem 2", rocElem: &retRocElem2)
+        print(getTagId(rocElem: retRocElem2))
 
         var argRocStr3 = getRocStr(swiftStr: "Swi")
         var retRocElem3 = RocElem()
         roc__mainForHost_1_exposed_generic(&retRocElem3, &argRocStr3)
         print("\nelem3 \(retRocElem3)")
-        yolo(label: "retRocElem 3", rocElem: &retRocElem3)
+        print(getTagId(rocElem: retRocElem3))
 
         print("output \(retRocElem)")
         // print("output \(getTag(rocElem: &retRocElem))")
@@ -139,66 +139,32 @@ struct ContentView: View {
     }
 }
 
-func yolo(label: String, rocElem: inout RocElem) {
+/**
+Apparently the host byte order is little-endian on iOS and MacOS.
+This means that the least significant byte comes first.
+I suppose this also explains why the bit representation is reversed?
 
-    withUnsafeMutablePointer(to: &rocElem.tag) { ptr in
+According to some random info on some Roc example platforms the last three
+bits of the tag pointer define the tag, so, I actually need to read the
+first byte's last three bits in reverse order, except, 0b111 still
+masks the first three bits and when converted to an int, the number is
+what would be expected from non-reversed bits.
+*/
+func getTagId(rocElem: RocElem) -> UInt {
+    withUnsafePointer(to: rocElem.tag) { ptr in
         let bytes = Data(bytes: ptr, count: MemoryLayout.size(ofValue: ptr))
 
-        print("tag \(UInt(bitPattern: ptr)) \(bits(fromByte: bytes[0])) \(bytes[0])")
-
-    }
-
-    withUnsafeMutablePointer(to: &rocElem) { ptr in
-        let bytes = Data(bytes: ptr, count: MemoryLayout.size(ofValue: ptr))
-        print(bits(fromByte: bytes[0]))
-        print("\(label) ptr         \(UInt(bitPattern: ptr) & 0b111)")
-    }
-     withUnsafeMutablePointer(to: &rocElem) { ptr in
-         print("\(label) ptr 2       \(ptr)")
-    }
-    withUnsafeMutablePointer(to: &rocElem.entry) { ptr in
-        let bytes = Data(bytes: ptr, count: MemoryLayout.size(ofValue: ptr))
-        print(bytes[MemoryLayout.size(ofValue: ptr) - 1])
-        print("\(label) entry ptr   \(ptr)")
-    }
-    withUnsafeMutablePointer(to: &rocElem.entry) { ptr in
-        print("\(label) entry ptr 2 \(ptr)")
+        return UInt(bytes[0] & 0b111)
     }
 }
+
+// MARK: Main
 
 @main
 struct RocTestApp: App {
     var body: some Scene {
         WindowGroup {
             ContentView()
-        }
-    }
-}
-
-func bits(fromByte byte: UInt8) -> [Bit] {
-    var byte = byte
-    var bits = [Bit](repeating: .zero, count: 8)
-    for i in 0..<8 {
-        let currentBit = byte & 0x01
-        if currentBit != 0 {
-            bits[i] = .one
-        }
-
-        byte >>= 1
-    }
-
-    return bits
-}
-
-enum Bit: UInt8, CustomStringConvertible {
-    case zero, one
-
-    var description: String {
-        switch self {
-        case .one:
-            return "1"
-        case .zero:
-            return "0"
         }
     }
 }

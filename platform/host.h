@@ -21,10 +21,10 @@ struct RocPotatoTextElem {
 };
 
 enum RocElemTag {
-    PotatoTextElem,
-    TextElem,
-    XTextElem,
-    XXTextElem
+    PotatoTextElem = 0,
+    TextElem = 1,
+    XTextElem = 2,
+    XXTextElem = 3
 };
 
 union RocElemEntry {
