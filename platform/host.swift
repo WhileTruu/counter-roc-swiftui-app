@@ -39,6 +39,47 @@ func getStrLen(rocStr: RocStr) -> Int {
     }
 }
 
+func getTag(rocElem: inout RocElem) -> Int {
+    let count = MemoryLayout.size(ofValue: rocElem.entry)
+
+    print("myasd \(rocElem)")
+    let bytes = withUnsafePointer(to: rocElem) { ptr in
+        // Is it possible unused tags are being dropped & compile time, and
+        // therefor it's always just one here?
+        // idk, check breakout again maybe
+        // ANyway, the tag id is supposed to be in the final 3 bits of the pointer.
+        // ALways looks like a 0 to me though..
+
+        print("ptr \(ptr)")
+        let bytes = Data(bytes: ptr, count: MemoryLayout.size(ofValue: ptr))
+        print(bytes[7] & 0b111)
+
+        print(unsafeBitCast(ptr, to: Int64.self) & 0b0000_0111)
+        print(unsafeBitCast(ptr, to: Int.self) & 0b0000_0111)
+        print(unsafeBitCast(ptr, to: UInt.self) & 0b0000_0111)
+        print(unsafeBitCast(ptr, to: UInt64.self) & 0b0000_0111)
+        // print(unsafeBitCast(ptr, to: Array<UInt8>.self) & 0b0000_0111)
+        return ptr.pointee
+    }
+
+    // let x = rocElem.entry.withMemoryRebound(to: UInt.self, capacity: 8) {
+    //     print("xx \($0)")
+    //     return strlen($0)
+    // }
+    // print("x \(x)")
+
+    // withUnsafePointer(to: rocElem) { pointerBuffer in
+    //     for byte in pointerBuffer {
+    //         print(byte)
+    //     }
+    // }
+
+
+    // print(bytes)
+    return 1 // Int(bytes & 0b0000_0111)
+}
+
+
 func getSwiftStr(rocStr: RocStr) -> String {
     let length = getStrLen(rocStr: rocStr)
 
@@ -69,11 +110,27 @@ struct ContentView: View {
     init() {
         var argRocStr = getRocStr(swiftStr: "Swift")
         var retRocElem = RocElem()
-
         roc__mainForHost_1_exposed_generic(&retRocElem, &argRocStr)
+        print("\nelem1 \(retRocElem)")
+        yolo(label: "retRocElem 1", rocElem: &retRocElem)
 
-        print("elem! \(getSwiftStr(rocStr: retRocElem.text))")
-        self.str = getSwiftStr(rocStr: retRocElem.text)
+        var argRocStr2 = getRocStr(swiftStr: "Swiftyyyyyyyyyyyyyyyyyyyyyyyyyyy")
+        var retRocElem2 = RocElem()
+        roc__mainForHost_1_exposed_generic(&retRocElem2, &argRocStr2)
+        print("\nelem2 \(retRocElem2)")
+        yolo(label: "retRocElem 2", rocElem: &retRocElem2)
+
+        var argRocStr3 = getRocStr(swiftStr: "Swi")
+        var retRocElem3 = RocElem()
+        roc__mainForHost_1_exposed_generic(&retRocElem3, &argRocStr3)
+        print("\nelem3 \(retRocElem3)")
+        yolo(label: "retRocElem 3", rocElem: &retRocElem3)
+
+        print("output \(retRocElem)")
+        // print("output \(getTag(rocElem: &retRocElem))")
+
+        // print("elem! \(getSwiftStr(rocStr: retRocElem.entry.potatoTextElem.schMext))")
+        self.str = "x"//getSwiftStr(rocStr: retRocElem.entry.textElem.text)
     }
 
     var body: some View {
@@ -82,11 +139,66 @@ struct ContentView: View {
     }
 }
 
+func yolo(label: String, rocElem: inout RocElem) {
+
+    withUnsafeMutablePointer(to: &rocElem.tag) { ptr in
+        let bytes = Data(bytes: ptr, count: MemoryLayout.size(ofValue: ptr))
+
+        print("tag \(UInt(bitPattern: ptr)) \(bits(fromByte: bytes[0])) \(bytes[0])")
+
+    }
+
+    withUnsafeMutablePointer(to: &rocElem) { ptr in
+        let bytes = Data(bytes: ptr, count: MemoryLayout.size(ofValue: ptr))
+        print(bits(fromByte: bytes[0]))
+        print("\(label) ptr         \(UInt(bitPattern: ptr) & 0b111)")
+    }
+     withUnsafeMutablePointer(to: &rocElem) { ptr in
+         print("\(label) ptr 2       \(ptr)")
+    }
+    withUnsafeMutablePointer(to: &rocElem.entry) { ptr in
+        let bytes = Data(bytes: ptr, count: MemoryLayout.size(ofValue: ptr))
+        print(bytes[MemoryLayout.size(ofValue: ptr) - 1])
+        print("\(label) entry ptr   \(ptr)")
+    }
+    withUnsafeMutablePointer(to: &rocElem.entry) { ptr in
+        print("\(label) entry ptr 2 \(ptr)")
+    }
+}
+
 @main
 struct RocTestApp: App {
     var body: some Scene {
         WindowGroup {
             ContentView()
+        }
+    }
+}
+
+func bits(fromByte byte: UInt8) -> [Bit] {
+    var byte = byte
+    var bits = [Bit](repeating: .zero, count: 8)
+    for i in 0..<8 {
+        let currentBit = byte & 0x01
+        if currentBit != 0 {
+            bits[i] = .one
+        }
+
+        byte >>= 1
+    }
+
+    return bits
+}
+
+enum Bit: UInt8, CustomStringConvertible {
+    case zero, one
+
+    var description: String {
+        switch self {
+        case .one:
+            return "1"
+        case .zero:
+            return "0"
         }
     }
 }

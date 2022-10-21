@@ -4,4 +4,4 @@ app "calculator-swiftui-app"
     provides [main] to pf
 
 main : Str -> Elem
-main = \a -> Elem.text "Roc <3 \(a)!"
+main = \a -> Elem.text "\(a)"
