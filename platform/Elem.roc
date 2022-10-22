@@ -1,10 +1,16 @@
 interface Elem
-  exposes [Elem, text, potatoText]
+  exposes [
+    Elem,
+    text,
+    potatoText,
+    vStack,
+  ]
   imports []
 
 Elem : [
     PotatoTextElem { schMext : Str, poop : F32 },
     TextElem { text : Str },
+    VStackElem (List Elem),
     XTextElem { ext : Str },
     XXTextElem { sext : Str },
 ]
@@ -26,3 +32,7 @@ potatoText = \str ->
         TextElem { text : str }
     else
         PotatoTextElem { schMext : str, poop : 2 }
+
+vStack : List Elem -> Elem
+vStack = \elems ->
+    VStackElem elems
