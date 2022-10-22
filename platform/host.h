@@ -17,7 +17,7 @@ struct RocXXTextElem {
 };
 struct RocPotatoTextElem {
     const struct RocStr schMext;
-    int poop;
+    float poop;
 };
 
 enum RocElemTag {

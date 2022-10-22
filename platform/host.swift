@@ -104,6 +104,72 @@ func getRocStr(swiftStr: String) -> RocStr {
     )
 }
 
+enum SwiftRocElem {
+    case swiftRocPotatoTextElem(SwiftRocPotatoTextElem)
+    case swiftRocTextElem(SwiftRocTextElem)
+    case swiftRocXTextElem(SwiftRocXTextElem)
+    case swiftRocXXTextElem(SwiftRocXXTextElem)
+}
+
+struct SwiftRocTextElem {
+    var text: String
+}
+
+struct SwiftRocXTextElem {
+    var ext: String
+}
+
+struct SwiftRocXXTextElem {
+    var sext: String
+}
+
+struct SwiftRocPotatoTextElem {
+    var schMext: String
+    var poop: Float32
+}
+
+func rocElemToSwiftRocElem(rocElem: RocElem) -> SwiftRocElem {
+    var tagId = getTagId(rocElem: rocElem)
+
+    var swiftRocElem: SwiftRocElem = {
+        switch tagId {
+        case 0:
+            return SwiftRocElem.swiftRocPotatoTextElem(SwiftRocPotatoTextElem(schMext: getSwiftStr(rocStr: rocElem.entry.potatoTextElem.schMext), poop: rocElem.entry.potatoTextElem.poop))
+        case 1:
+            return SwiftRocElem.swiftRocTextElem(SwiftRocTextElem(text: getSwiftStr(rocStr: rocElem.entry.textElem.text)))
+        case 2:
+            return SwiftRocElem.swiftRocXTextElem(SwiftRocXTextElem(ext: getSwiftStr(rocStr: rocElem.entry.xTextElem.ext)))
+        case 3:
+            return SwiftRocElem.swiftRocXXTextElem(SwiftRocXXTextElem(sext: getSwiftStr(rocStr: rocElem.entry.xxTextElem.sext)))
+        default:
+            return SwiftRocElem.swiftRocTextElem(SwiftRocTextElem(text: "FIXME: It bork, idk how to handle nulls"))
+        }
+    }()
+
+    return swiftRocElem
+}
+
+/**
+Apparently the host byte order is little-endian on iOS and MacOS.
+This means that the least significant byte comes first.
+I suppose this also explains why the bit representation is reversed?
+
+According to some random info on some Roc example platforms the last three
+bits of the tag pointer define the tag, so, I actually need to read the
+first byte's last three bits in reverse order, except, 0b111 still
+masks the first three bits and when converted to an int, the number is
+what would be expected from non-reversed bits.
+*/
+func getTagId(rocElem: RocElem) -> UInt {
+    withUnsafePointer(to: rocElem.tag) { ptr in
+        let bytes = Data(bytes: ptr, count: MemoryLayout.size(ofValue: ptr))
+
+        return UInt(bytes[0] & 0b111)
+    }
+}
+
+// MARK: View
+
 struct ContentView: View {
     var str: String
 
@@ -127,6 +193,9 @@ struct ContentView: View {
         print(getTagId(rocElem: retRocElem3))
 
         print("output \(retRocElem)")
+        print(rocElemToSwiftRocElem(rocElem: retRocElem))
+        print(rocElemToSwiftRocElem(rocElem: retRocElem2))
+        print(rocElemToSwiftRocElem(rocElem: retRocElem3))
         // print("output \(getTag(rocElem: &retRocElem))")
 
         // print("elem! \(getSwiftStr(rocStr: retRocElem.entry.potatoTextElem.schMext))")
@@ -136,25 +205,6 @@ struct ContentView: View {
     var body: some View {
         Text(self.str)
             .padding()
-    }
-}
-
-/**
-Apparently the host byte order is little-endian on iOS and MacOS.
-This means that the least significant byte comes first.
-I suppose this also explains why the bit representation is reversed?
-
-According to some random info on some Roc example platforms the last three
-bits of the tag pointer define the tag, so, I actually need to read the
-first byte's last three bits in reverse order, except, 0b111 still
-masks the first three bits and when converted to an int, the number is
-what would be expected from non-reversed bits.
-*/
-func getTagId(rocElem: RocElem) -> UInt {
-    withUnsafePointer(to: rocElem.tag) { ptr in
-        let bytes = Data(bytes: ptr, count: MemoryLayout.size(ofValue: ptr))
-
-        return UInt(bytes[0] & 0b111)
     }
 }
 
