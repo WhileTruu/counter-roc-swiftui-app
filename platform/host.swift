@@ -39,47 +39,6 @@ func getStrLen(rocStr: RocStr) -> Int {
     }
 }
 
-func getTag(rocElem: inout RocElem) -> Int {
-    let count = MemoryLayout.size(ofValue: rocElem.entry)
-
-    print("myasd \(rocElem)")
-    let bytes = withUnsafePointer(to: rocElem) { ptr in
-        // Is it possible unused tags are being dropped & compile time, and
-        // therefor it's always just one here?
-        // idk, check breakout again maybe
-        // ANyway, the tag id is supposed to be in the final 3 bits of the pointer.
-        // ALways looks like a 0 to me though..
-
-        print("ptr \(ptr)")
-        let bytes = Data(bytes: ptr, count: MemoryLayout.size(ofValue: ptr))
-        print(bytes[7] & 0b111)
-
-        print(unsafeBitCast(ptr, to: Int64.self) & 0b0000_0111)
-        print(unsafeBitCast(ptr, to: Int.self) & 0b0000_0111)
-        print(unsafeBitCast(ptr, to: UInt.self) & 0b0000_0111)
-        print(unsafeBitCast(ptr, to: UInt64.self) & 0b0000_0111)
-        // print(unsafeBitCast(ptr, to: Array<UInt8>.self) & 0b0000_0111)
-        return ptr.pointee
-    }
-
-    // let x = rocElem.entry.withMemoryRebound(to: UInt.self, capacity: 8) {
-    //     print("xx \($0)")
-    //     return strlen($0)
-    // }
-    // print("x \(x)")
-
-    // withUnsafePointer(to: rocElem) { pointerBuffer in
-    //     for byte in pointerBuffer {
-    //         print(byte)
-    //     }
-    // }
-
-
-    // print(bytes)
-    return 1 // Int(bytes & 0b0000_0111)
-}
-
-
 func getSwiftStr(rocStr: RocStr) -> String {
     let length = getStrLen(rocStr: rocStr)
 
