@@ -118,47 +118,6 @@ func rocElemToSwiftRocElem(tagId: UInt, rocElem: RocElem) -> SwiftRocElem {
     return swiftRocElem
 }
 
-/**
-Apparently the host byte order is little-endian on iOS and MacOS.
-This means that the least significant byte comes first.
-I suppose this also explains why the bit representation is reversed?
-
-According to some random info on some Roc example platforms the last three
-bits of the tag pointer define the tag, so, I actually need to read the
-first byte's last three bits in reverse order, except, 0b111 still
-masks the first three bits and when converted to an int, the number is
-what would be expected from non-reversed bits.
-
-Furthermore, if I add an Elem among the tags of Elem tagged union, apparently the
-tag id is now in RocElem's pointer bits.
-
-To get rocElems now, I think I need to remove the last three bits from the pointer somehow.
-*/
-// func getTagId(rocElem: RocElem) -> UInt {
-//     withUnsafePointer(to: rocElem) { ptr in
-//         var bytes = Data(bytes: ptr, count: MemoryLayout.size(ofValue: ptr))
-//         let tagId = UInt(bytes[0] & 0b111)
-//         // print("tagZ \(bits(fromByte: bytes[0])) \(bits(fromByte: bytes[1])) \(bits(fromByte: bytes[2])) \(bits(fromByte: bytes[3])) \(bits(fromByte: bytes[4])) \(bits(fromByte: bytes[5])) \(bits(fromByte: bytes[6])) \(bits(fromByte: bytes[7]))")
-//
-//         bytes[0] = bytes[0] & ~0b111
-//
-//         bytes.withUnsafeBytes {(myPtr: UnsafePointer<RocElem>) in
-//             let rawPtr = UnsafeRawPointer(myPtr)
-//             let realRocElem = rawPtr.load(as: RocElem.self)
-//
-//             var bytes2 = Data(bytes: rawPtr, count: MemoryLayout.size(ofValue: rawPtr))
-//
-//             print("tagX \(bits(fromByte: bytes2[0])) \(bits(fromByte: bytes2[1])) \(bits(fromByte: bytes2[2])) \(bits(fromByte: bytes2[3])) \(bits(fromByte: bytes2[4])) \(bits(fromByte: bytes2[5])) \(bits(fromByte: bytes2[6])) \(bits(fromByte: bytes2[7]))")
-//
-//             print("realRocElem \(realRocElem.entry.pointee.potatoTextElem)")
-//             print("myPtr       \(rocElemToSwiftRocElem(tagId: tagId, rocElem: myPtr.pointee))")
-//             print("rocElem     \(rocElem.entry.pointee.potatoTextElem)")
-//         }
-//
-//         return tagId
-//     }
-// }
-
 func getTagId2(rocElemPtr: UnsafePointer<RocElem>) -> UInt {
    var bytes = Data(bytes: rocElemPtr, count: MemoryLayout.size(ofValue: rocElemPtr))
    return UInt(bytes[0] & 0b111)
@@ -237,32 +196,3 @@ struct RocTestApp: App {
     }
 }
 
-// MARK: Helpers
-
-func bits(fromByte byte: UInt8) -> [Bit] {
-    var byte = byte
-    var bits = [Bit](repeating: .zero, count: 8)
-    for i in 0..<8 {
-        let currentBit = byte & 0x01
-        if currentBit != 0 {
-            bits[i] = .one
-        }
-
-        byte >>= 1
-    }
-
-    return bits
-}
-
-enum Bit: UInt8, CustomStringConvertible {
-    case zero, one
-
-    var description: String {
-        switch self {
-        case .one:
-            return "1"
-        case .zero:
-            return "0"
-        }
-    }
-}
