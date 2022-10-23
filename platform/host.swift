@@ -152,13 +152,14 @@ func getRocElem(rocElemPtr: UnsafePointer<RocElem>) -> RocElem {
 
 struct ContentView: View {
     var str: String
+    var swiftRocElem: SwiftRocElem
 
     init() {
         var argRocStr = getRocStr(swiftStr: "Swif")
         var retRocElem = RocElem()
         roc__mainForHost_1_exposed_generic(&retRocElem, &argRocStr)
 
-        let swiftRocElem = withUnsafePointer(to: retRocElem) { ptr in
+        swiftRocElem = withUnsafePointer(to: retRocElem) { ptr in
             let tagId = getTagId(rocElemPtr: ptr)
             let elem = getRocElem(rocElemPtr: ptr)
             print(tagId)
@@ -197,10 +198,36 @@ struct ContentView: View {
     }
 
     var body: some View {
-        Text(self.str)
-            .padding()
+        VStack(alignment: .leading) {
+            Text(self.str)
+                .padding()
+            swiftRocElemToView(elem: self.swiftRocElem)
+        }
     }
 }
+func swiftRocElemToView(elem: SwiftRocElem) -> some View {
+    switch elem {
+    case .swiftRocPotatoTextElem(let innerElem):
+        return AnyView(Text(innerElem.schMext).padding())
+    case .swiftRocTextElem(let innerElem):
+        return AnyView(Text(innerElem.text).padding())
+    case .swiftRocXTextElem(let innerElem):
+        return AnyView(Text(innerElem.ext).padding())
+    case .swiftRocXXTextElem(let innerElem):
+        return AnyView(Text(innerElem.sext).padding())
+    case .swiftRocVStackElem(let innerElems):
+        return AnyView(swiftRocElemToView2(elems: innerElems))
+    }
+}
+
+func swiftRocElemToView2(elems: Array<SwiftRocElem>) -> some View {
+    VStack(alignment: .leading) {
+        ForEach(elems.indices, id: \.self) { i in
+            swiftRocElemToView(elem: elems[i])
+        }
+    }
+}
+
 
 // MARK: Main
 
