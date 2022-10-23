@@ -68,6 +68,7 @@ enum SwiftRocElem {
     case swiftRocTextElem(SwiftRocTextElem)
     case swiftRocXTextElem(SwiftRocXTextElem)
     case swiftRocXXTextElem(SwiftRocXXTextElem)
+    case swiftRocVStackElem(Array<SwiftRocElem>)
 }
 
 struct SwiftRocTextElem {
@@ -88,42 +89,57 @@ struct SwiftRocPotatoTextElem {
 }
 
 func rocElemToSwiftRocElem(tagId: UInt, rocElem: RocElem) -> SwiftRocElem {
+    let entry = rocElem.entry.pointee
 
-    var swiftRocElem: SwiftRocElem = {
-        switch tagId {
-        case 0:
-            return SwiftRocElem.swiftRocPotatoTextElem(SwiftRocPotatoTextElem(schMext: getSwiftStr(rocStr: rocElem.entry.pointee.potatoTextElem.schMext), poop: rocElem.entry.pointee.potatoTextElem.poop))
-        case 1:
-            return SwiftRocElem.swiftRocTextElem(SwiftRocTextElem(text: getSwiftStr(rocStr: rocElem.entry.pointee.textElem.text)))
-        case 2:
-
-            let ptr = rocElem.entry.pointee.vStackElem.children.elements!
-            let len = rocElem.entry.pointee.vStackElem.children.length
-            let cap = rocElem.entry.pointee.vStackElem.children.capacity
-            // let buffer = UnsafeBufferPointer(start: ptr, count: len);
-            let buffer = ptr.withMemoryRebound(to: Float32.self, capacity: MemoryLayout<Float32>.stride) {
-                UnsafeBufferPointer(start: $0, count: len)
-            }
-            print(Array(buffer))
-            return SwiftRocElem.swiftRocTextElem(SwiftRocTextElem(text: "this be a vstack"))
-        case 3:
-            return SwiftRocElem.swiftRocXTextElem(SwiftRocXTextElem(ext: getSwiftStr(rocStr: rocElem.entry.pointee.xTextElem.ext)))
-        case 4:
-            return SwiftRocElem.swiftRocXXTextElem(SwiftRocXXTextElem(sext: getSwiftStr(rocStr: rocElem.entry.pointee.xxTextElem.sext)))
-        default:
-            return SwiftRocElem.swiftRocTextElem(SwiftRocTextElem(text: "FIXME: It bork, idk how to handle nulls"))
-        }
-    }()
-
-    return swiftRocElem
+    switch tagId {
+    case 0:
+        return SwiftRocElem.swiftRocPotatoTextElem(SwiftRocPotatoTextElem(schMext: getSwiftStr(rocStr: entry.potatoTextElem.schMext), poop: entry.potatoTextElem.poop))
+    case 1:
+        return SwiftRocElem.swiftRocTextElem(SwiftRocTextElem(text: getSwiftStr(rocStr: entry.textElem.text)))
+    case 2:
+        return entryToSwiftRocVStackElem(entry: entry)
+    case 3:
+        return SwiftRocElem.swiftRocXTextElem(SwiftRocXTextElem(ext: getSwiftStr(rocStr: entry.xTextElem.ext)))
+    case 4:
+        return SwiftRocElem.swiftRocXXTextElem(SwiftRocXXTextElem(sext: getSwiftStr(rocStr: entry.xxTextElem.sext)))
+    default:
+        return SwiftRocElem.swiftRocTextElem(SwiftRocTextElem(text: "FIXME: It bork, idk how to handle nulls"))
+    }
 }
 
-func getTagId2(rocElemPtr: UnsafePointer<RocElem>) -> UInt {
+func entryToSwiftRocVStackElem(entry: RocElemEntry) -> SwiftRocElem {
+    let ptr = entry.vStackElem.children.elements!
+    let len = entry.vStackElem.children.length
+    let cap = entry.vStackElem.children.capacity
+
+    let buffer = UnsafeBufferPointer(start: ptr, count: len);
+    let arrayOfPtrs = Array(buffer)
+
+    let myRocElem = arrayOfPtrs[0]!.assumingMemoryBound(to: RocElem.self).pointee
+
+    let myArr = arrayOfPtrs.map { arrayPtr in
+        withUnsafePointer(to:arrayPtr) { ptr2 in
+            var bytes = Data(bytes: ptr2, count: MemoryLayout.size(ofValue: ptr2))
+            let tagId = UInt(bytes[0] & 0b111)
+
+            bytes[0] = bytes[0] & ~0b111
+            let rocElem = bytes.withUnsafeBytes { (myPtr: UnsafePointer<RocElem>) in
+                return myPtr.pointee
+            }
+
+            return rocElemToSwiftRocElem(tagId: tagId, rocElem: rocElem)
+        }
+    }
+
+    return SwiftRocElem.swiftRocVStackElem(myArr)
+}
+
+func getTagId(rocElemPtr: UnsafePointer<RocElem>) -> UInt {
    var bytes = Data(bytes: rocElemPtr, count: MemoryLayout.size(ofValue: rocElemPtr))
    return UInt(bytes[0] & 0b111)
 }
 
-func getRocElem2(rocElemPtr: UnsafePointer<RocElem>) -> RocElem {
+func getRocElem(rocElemPtr: UnsafePointer<RocElem>) -> RocElem {
     var bytes = Data(bytes: rocElemPtr, count: MemoryLayout.size(ofValue: rocElemPtr))
     bytes[0] = bytes[0] & ~0b111
 
@@ -138,17 +154,18 @@ struct ContentView: View {
     var str: String
 
     init() {
-        var argRocStr = getRocStr(swiftStr: "Swift")
+        var argRocStr = getRocStr(swiftStr: "Swif")
         var retRocElem = RocElem()
         roc__mainForHost_1_exposed_generic(&retRocElem, &argRocStr)
 
-        withUnsafePointer(to: retRocElem) { ptr in
-            let tagId = getTagId2(rocElemPtr: ptr)
-            let elem = getRocElem2(rocElemPtr: ptr)
+        let swiftRocElem = withUnsafePointer(to: retRocElem) { ptr in
+            let tagId = getTagId(rocElemPtr: ptr)
+            let elem = getRocElem(rocElemPtr: ptr)
             print(tagId)
             print(elem)
-            print(rocElemToSwiftRocElem(tagId: tagId, rocElem: elem))
+            return rocElemToSwiftRocElem(tagId: tagId, rocElem: elem)
         }
+        print(swiftRocElem)
 
 
         var argRocStr2 = getRocStr(swiftStr: "Swiftyyyyyyyyyyyyyyyyyyyyyyyyyyy")
@@ -156,8 +173,8 @@ struct ContentView: View {
         roc__mainForHost_1_exposed_generic(&retRocElem2, &argRocStr2)
 
         withUnsafePointer(to: retRocElem2) { ptr in
-            let tagId = getTagId2(rocElemPtr: ptr)
-            let elem = getRocElem2(rocElemPtr: ptr)
+            let tagId = getTagId(rocElemPtr: ptr)
+            let elem = getRocElem(rocElemPtr: ptr)
             print(tagId)
             print(elem)
             print(rocElemToSwiftRocElem(tagId: tagId, rocElem: elem))
@@ -169,8 +186,8 @@ struct ContentView: View {
         roc__mainForHost_1_exposed_generic(&retRocElem3, &argRocStr3)
 
         withUnsafePointer(to: retRocElem3) { ptr in
-            let tagId = getTagId2(rocElemPtr: ptr)
-            let elem = getRocElem2(rocElemPtr: ptr)
+            let tagId = getTagId(rocElemPtr: ptr)
+            let elem = getRocElem(rocElemPtr: ptr)
             print(tagId)
             print(elem)
             print(rocElemToSwiftRocElem(tagId: tagId, rocElem: elem))

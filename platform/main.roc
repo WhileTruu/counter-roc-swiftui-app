@@ -7,4 +7,3 @@ platform "swiftui-platform"
 
 mainForHost : Box Str -> Elem
 mainForHost = \a -> main (Box.unbox a)
-
