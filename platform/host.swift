@@ -75,26 +75,25 @@ struct SwiftRocTextElem {
 func rocElemToSwiftRocElem(tagId: UInt, rocElem: RocElem) -> SwiftRocElem {
     let entry = rocElem.entry.pointee
 
+    // FIXME Can unsafety be reduced by moving things around?
+    let elem: SwiftRocElem?
+
     switch tagId {
     case 0:
-        return SwiftRocElem.swiftRocTextElem(SwiftRocTextElem(text: getSwiftStr(rocStr: entry.textElem.text)))
+        elem = SwiftRocElem.swiftRocTextElem(SwiftRocTextElem(text: getSwiftStr(rocStr: entry.textElem.text)))
     case 1:
-        return SwiftRocElem.swiftRocTextElem(SwiftRocTextElem(text: getSwiftStr(rocStr: entry.textElem.text)))
-    case 2:
-        return entryToSwiftRocVStackElem(entry: entry)
-    case 3:
-        return SwiftRocElem.swiftRocTextElem(SwiftRocTextElem(text: getSwiftStr(rocStr: entry.textElem.text)))
-    case 4:
-        return SwiftRocElem.swiftRocTextElem(SwiftRocTextElem(text: getSwiftStr(rocStr: entry.textElem.text)))
+        elem = entryToSwiftRocVStackElem(entry: entry)
     default:
-        return SwiftRocElem.swiftRocTextElem(SwiftRocTextElem(text: "FIXME: It bork, idk how to handle nulls"))
+        elem = nil
     }
+
+    return elem!
 }
 
 func entryToSwiftRocVStackElem(entry: RocElemEntry) -> SwiftRocElem {
-    let ptr = entry.vStackElem.children.elements!
-    let len = entry.vStackElem.children.length
-    let cap = entry.vStackElem.children.capacity
+    let ptr = entry.stackElem.children.elements!
+    let len = entry.stackElem.children.length
+    let cap = entry.stackElem.children.capacity
 
     let buffer = UnsafeBufferPointer(start: ptr, count: len);
     let arrayOfPtrs = Array(buffer)

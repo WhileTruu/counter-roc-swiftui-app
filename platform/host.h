@@ -12,33 +12,17 @@ struct RocList {
     size_t capacity;
 };
 
-struct RocPotatoTextElem {
-    const struct RocStr schMext;
-    float poop;
-};
-
 struct RocTextElem {
     const struct RocStr text;
 };
 
-struct RocXTextElem {
-    const struct RocStr ext;
-};
-
-struct RocXXTextElem {
-    const struct RocStr sext;
-};
-
-struct RocVStackElem {
+struct RocStackElem {
     const struct RocList children;
 };
 
 union RocElemEntry {
-    struct RocPotatoTextElem potatoTextElem;
     struct RocTextElem textElem;
-    struct RocVStackElem vStackElem;
-    struct RocXTextElem xTextElem;
-    struct RocXXTextElem xxTextElem;
+    struct RocStackElem stackElem;
 };
 
 struct RocElem {
