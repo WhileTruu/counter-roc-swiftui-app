@@ -69,16 +69,19 @@ func getRocStr(swiftStr: String) -> RocStr {
 
 // Mark: Roc List
 
-func rocListToSwiftArray<T>(rocList: RocList, _ elemFromPointer: (UnsafeRawPointer) -> T) -> Array<T> {
+func rocListToSwiftArray<T, U>(rocList: RocList, _ elemFromPointer: (UnsafePointer<T>) -> U) -> Array<U> {
     let ptr = rocList.elements!
     let len = rocList.length
     let cap = rocList.capacity
 
-    let buffer = UnsafeBufferPointer(start: ptr, count: len);
+    let buffer = ptr.withMemoryRebound(to: T.self, capacity: len) {
+        UnsafeBufferPointer(start: $0, count: len)
+    }
+
     let arrayOfPtrs = Array(buffer)
 
     let myArr = arrayOfPtrs.map { arrayPtr in
-        withUnsafePointer(to:arrayPtr) { ptr2 in
+        withUnsafePointer(to: arrayPtr) { ptr2 in
             return elemFromPointer(ptr2)
         }
     }
@@ -88,16 +91,9 @@ func rocListToSwiftArray<T>(rocList: RocList, _ elemFromPointer: (UnsafeRawPoint
 
 // Mark: Roc Elem
 
-func swiftRocElemFromPointer(ptr: UnsafeRawPointer) -> SwiftRocElem {
-    var bytes = Data(bytes: ptr, count: MemoryLayout.size(ofValue: ptr))
-    let tagId = UInt(bytes[0] & 0b111)
-
-    bytes[0] = bytes[0] & ~0b111
-    let rocElem = bytes.withUnsafeBytes { (elemPtr: UnsafePointer<RocElem>) in
-        return elemPtr.pointee
-    }
-
-    let entry = rocElem.entry.pointee
+func swiftRocElemFromPointer(ptr: UnsafePointer<RocElem>) -> SwiftRocElem {
+    let tagId = getTagId(ptr: ptr)
+    let entry: RocElemEntry = getRocEntry(ptr: ptr)
 
     // FIXME Can unsafety be reduced by moving things around?
     let elem: SwiftRocElem?
@@ -117,7 +113,7 @@ func swiftRocElemFromPointer(ptr: UnsafeRawPointer) -> SwiftRocElem {
 }
 
 func entryToSwiftRocVStackElem2(rocList: RocList) -> SwiftRocElem {
-    let array = rocListToSwiftArray(rocList: rocList, swiftRocElemFromPointer)
+    let array: Array<SwiftRocElem> = rocListToSwiftArray(rocList: rocList, swiftRocElemFromPointer)
 
     return SwiftRocElem.swiftRocVStackElem(array)
 }
@@ -155,16 +151,16 @@ Also, tags are brought in here alphabetically ordered, so in case of tags `A` an
 `B`, `A` = 0 and `B` = 0, an empty tag would be NULL.
 */
 func getTagId<T>(ptr: UnsafePointer<T>) -> UInt {
-   var bytes = Data(bytes: ptr, count: MemoryLayout.size(ofValue: ptr))
+   let bytes = Data(bytes: ptr, count: MemoryLayout.size(ofValue: ptr))
    return UInt(bytes[0] & 0b111)
 }
 
-func getRocEntry<T, U>(ptr: UnsafePointer<T>) -> U {
+func getRocEntry(ptr: UnsafePointer<RocElem>) -> RocElemEntry {
     var bytes = Data(bytes: ptr, count: MemoryLayout.size(ofValue: ptr))
     bytes[0] = bytes[0] & ~0b111
 
-    return bytes.withUnsafeBytes { (myPtr: UnsafePointer<U>) in
-        return myPtr.pointee
+    return bytes.withUnsafeBytes { (myPtr: UnsafePointer<RocElem>) in
+        return myPtr.pointee.entry.pointee
     }
 }
 
