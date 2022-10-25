@@ -1,6 +1,8 @@
 import Foundation
 import SwiftUI
 
+// MARK: Roc memory
+
 @_cdecl("roc_alloc")
 func rocAlloc(size: Int, _alignment: UInt) -> UInt  {
     guard let ptr = malloc(size) else {
@@ -21,6 +23,8 @@ func rocRealloc(ptr: UInt, _oldSize: Int, newSize: Int, _alignment: UInt) -> UIn
     }
     return UInt(bitPattern: ptr)
 }
+
+// MARK: Roc Str
 
 func isSmallString(rocStr: RocStr) -> Bool {
     return rocStr.capacity < 0
@@ -63,16 +67,36 @@ func getRocStr(swiftStr: String) -> RocStr {
     )
 }
 
-enum SwiftRocElem {
-    case swiftRocTextElem(SwiftRocTextElem)
-    case swiftRocVStackElem(Array<SwiftRocElem>)
+// Mark: Roc List
+
+func rocListToSwiftArray<T>(rocList: RocList, _ elemFromPointer: (UnsafeRawPointer) -> T) -> Array<T> {
+    let ptr = rocList.elements!
+    let len = rocList.length
+    let cap = rocList.capacity
+
+    let buffer = UnsafeBufferPointer(start: ptr, count: len);
+    let arrayOfPtrs = Array(buffer)
+
+    let myArr = arrayOfPtrs.map { arrayPtr in
+        withUnsafePointer(to:arrayPtr) { ptr2 in
+            return elemFromPointer(ptr2)
+        }
+    }
+
+    return myArr
 }
 
-struct SwiftRocTextElem {
-    var text: String
-}
+// Mark: Roc Elem
 
-func rocElemToSwiftRocElem(tagId: UInt, rocElem: RocElem) -> SwiftRocElem {
+func swiftRocElemFromPointer(ptr: UnsafeRawPointer) -> SwiftRocElem {
+    var bytes = Data(bytes: ptr, count: MemoryLayout.size(ofValue: ptr))
+    let tagId = UInt(bytes[0] & 0b111)
+
+    bytes[0] = bytes[0] & ~0b111
+    let rocElem = bytes.withUnsafeBytes { (elemPtr: UnsafePointer<RocElem>) in
+        return elemPtr.pointee
+    }
+
     let entry = rocElem.entry.pointee
 
     // FIXME Can unsafety be reduced by moving things around?
@@ -80,9 +104,11 @@ func rocElemToSwiftRocElem(tagId: UInt, rocElem: RocElem) -> SwiftRocElem {
 
     switch tagId {
     case 0:
-        elem = SwiftRocElem.swiftRocTextElem(SwiftRocTextElem(text: getSwiftStr(rocStr: entry.textElem.text)))
+        elem = entryToSwiftRocVStackElem2(rocList: entry.stackElem.children)
     case 1:
-        elem = entryToSwiftRocVStackElem(entry: entry)
+        elem = SwiftRocElem.swiftRocTextElem(SwiftRocTextElem(text: getSwiftStr(rocStr: entry.textElem.text)))
+    case 2:
+        elem = entryToSwiftRocVStackElem2(rocList: entry.stackElem.children)
     default:
         elem = nil
     }
@@ -90,31 +116,19 @@ func rocElemToSwiftRocElem(tagId: UInt, rocElem: RocElem) -> SwiftRocElem {
     return elem!
 }
 
-func entryToSwiftRocVStackElem(entry: RocElemEntry) -> SwiftRocElem {
-    let ptr = entry.stackElem.children.elements!
-    let len = entry.stackElem.children.length
-    let cap = entry.stackElem.children.capacity
+func entryToSwiftRocVStackElem2(rocList: RocList) -> SwiftRocElem {
+    let array = rocListToSwiftArray(rocList: rocList, swiftRocElemFromPointer)
 
-    let buffer = UnsafeBufferPointer(start: ptr, count: len);
-    let arrayOfPtrs = Array(buffer)
+    return SwiftRocElem.swiftRocVStackElem(array)
+}
 
-    let myRocElem = arrayOfPtrs[0]!.assumingMemoryBound(to: RocElem.self).pointee
+enum SwiftRocElem {
+    case swiftRocTextElem(SwiftRocTextElem)
+    case swiftRocVStackElem(Array<SwiftRocElem>)
+}
 
-    let myArr = arrayOfPtrs.map { arrayPtr in
-        withUnsafePointer(to:arrayPtr) { ptr2 in
-            var bytes = Data(bytes: ptr2, count: MemoryLayout.size(ofValue: ptr2))
-            let tagId = UInt(bytes[0] & 0b111)
-
-            bytes[0] = bytes[0] & ~0b111
-            let rocElem = bytes.withUnsafeBytes { (myPtr: UnsafePointer<RocElem>) in
-                return myPtr.pointee
-            }
-
-            return rocElemToSwiftRocElem(tagId: tagId, rocElem: rocElem)
-        }
-    }
-
-    return SwiftRocElem.swiftRocVStackElem(myArr)
+struct SwiftRocTextElem {
+    var text: String
 }
 
 /**
@@ -140,16 +154,16 @@ Comment restored for reference - the stuff is working now, I think.
 Also, tags are brought in here alphabetically ordered, so in case of tags `A` and
 `B`, `A` = 0 and `B` = 0, an empty tag would be NULL.
 */
-func getTagId(rocElemPtr: UnsafePointer<RocElem>) -> UInt {
-   var bytes = Data(bytes: rocElemPtr, count: MemoryLayout.size(ofValue: rocElemPtr))
+func getTagId<T>(ptr: UnsafePointer<T>) -> UInt {
+   var bytes = Data(bytes: ptr, count: MemoryLayout.size(ofValue: ptr))
    return UInt(bytes[0] & 0b111)
 }
 
-func getRocElem(rocElemPtr: UnsafePointer<RocElem>) -> RocElem {
-    var bytes = Data(bytes: rocElemPtr, count: MemoryLayout.size(ofValue: rocElemPtr))
+func getRocEntry<T, U>(ptr: UnsafePointer<T>) -> U {
+    var bytes = Data(bytes: ptr, count: MemoryLayout.size(ofValue: ptr))
     bytes[0] = bytes[0] & ~0b111
 
-    return bytes.withUnsafeBytes { (myPtr: UnsafePointer<RocElem>) in
+    return bytes.withUnsafeBytes { (myPtr: UnsafePointer<U>) in
         return myPtr.pointee
     }
 }
@@ -166,11 +180,11 @@ struct ContentView: View {
         roc__mainForHost_1_exposed_generic(&retRocElem, &argRocStr)
 
         swiftRocElem = withUnsafePointer(to: retRocElem) { ptr in
-            let tagId = getTagId(rocElemPtr: ptr)
-            let elem = getRocElem(rocElemPtr: ptr)
+            let tagId = getTagId(ptr: ptr)
+            let elem: RocElemEntry = getRocEntry(ptr: ptr)
             print(tagId)
             print(elem)
-            return rocElemToSwiftRocElem(tagId: tagId, rocElem: elem)
+            return swiftRocElemFromPointer(ptr: ptr)
         }
         print(swiftRocElem)
 
@@ -180,11 +194,11 @@ struct ContentView: View {
         roc__mainForHost_1_exposed_generic(&retRocElem2, &argRocStr2)
 
         withUnsafePointer(to: retRocElem2) { ptr in
-            let tagId = getTagId(rocElemPtr: ptr)
-            let elem = getRocElem(rocElemPtr: ptr)
+            let tagId = getTagId(ptr: ptr)
+            let elem: RocElemEntry = getRocEntry(ptr: ptr)
             print(tagId)
             print(elem)
-            print(rocElemToSwiftRocElem(tagId: tagId, rocElem: elem))
+            print(swiftRocElemFromPointer(ptr: ptr))
         }
 
 
@@ -193,11 +207,11 @@ struct ContentView: View {
         roc__mainForHost_1_exposed_generic(&retRocElem3, &argRocStr3)
 
         withUnsafePointer(to: retRocElem3) { ptr in
-            let tagId = getTagId(rocElemPtr: ptr)
-            let elem = getRocElem(rocElemPtr: ptr)
+            let tagId = getTagId(ptr: ptr)
+            let elem: RocElemEntry = getRocEntry(ptr: ptr)
             print(tagId)
             print(elem)
-            print(rocElemToSwiftRocElem(tagId: tagId, rocElem: elem))
+            print(swiftRocElemFromPointer(ptr: ptr))
         }
 
         self.str = "x"
