@@ -33,14 +33,6 @@ struct RocVStackElem {
     const struct RocList children;
 };
 
-enum RocElemTag {
-    PotatoTextElem = 0,
-    TextElem = 1,
-    VStackElem = 2,
-    XTextElem = 3,
-    XXTextElem = 4
-};
-
 union RocElemEntry {
     struct RocPotatoTextElem potatoTextElem;
     struct RocTextElem textElem;
@@ -51,7 +43,6 @@ union RocElemEntry {
 
 struct RocElem {
     union RocElemEntry *entry;
-    enum RocElemTag *tag;
 };
 
 extern void roc__mainForHost_1_exposed_generic(

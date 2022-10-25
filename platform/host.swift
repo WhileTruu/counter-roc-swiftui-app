@@ -64,10 +64,7 @@ func getRocStr(swiftStr: String) -> RocStr {
 }
 
 enum SwiftRocElem {
-    case swiftRocPotatoTextElem(SwiftRocPotatoTextElem)
     case swiftRocTextElem(SwiftRocTextElem)
-    case swiftRocXTextElem(SwiftRocXTextElem)
-    case swiftRocXXTextElem(SwiftRocXXTextElem)
     case swiftRocVStackElem(Array<SwiftRocElem>)
 }
 
@@ -75,33 +72,20 @@ struct SwiftRocTextElem {
     var text: String
 }
 
-struct SwiftRocXTextElem {
-    var ext: String
-}
-
-struct SwiftRocXXTextElem {
-    var sext: String
-}
-
-struct SwiftRocPotatoTextElem {
-    var schMext: String
-    var poop: Float32
-}
-
 func rocElemToSwiftRocElem(tagId: UInt, rocElem: RocElem) -> SwiftRocElem {
     let entry = rocElem.entry.pointee
 
     switch tagId {
     case 0:
-        return SwiftRocElem.swiftRocPotatoTextElem(SwiftRocPotatoTextElem(schMext: getSwiftStr(rocStr: entry.potatoTextElem.schMext), poop: entry.potatoTextElem.poop))
+        return SwiftRocElem.swiftRocTextElem(SwiftRocTextElem(text: getSwiftStr(rocStr: entry.textElem.text)))
     case 1:
         return SwiftRocElem.swiftRocTextElem(SwiftRocTextElem(text: getSwiftStr(rocStr: entry.textElem.text)))
     case 2:
         return entryToSwiftRocVStackElem(entry: entry)
     case 3:
-        return SwiftRocElem.swiftRocXTextElem(SwiftRocXTextElem(ext: getSwiftStr(rocStr: entry.xTextElem.ext)))
+        return SwiftRocElem.swiftRocTextElem(SwiftRocTextElem(text: getSwiftStr(rocStr: entry.textElem.text)))
     case 4:
-        return SwiftRocElem.swiftRocXXTextElem(SwiftRocXXTextElem(sext: getSwiftStr(rocStr: entry.xxTextElem.sext)))
+        return SwiftRocElem.swiftRocTextElem(SwiftRocTextElem(text: getSwiftStr(rocStr: entry.textElem.text)))
     default:
         return SwiftRocElem.swiftRocTextElem(SwiftRocTextElem(text: "FIXME: It bork, idk how to handle nulls"))
     }
@@ -134,6 +118,29 @@ func entryToSwiftRocVStackElem(entry: RocElemEntry) -> SwiftRocElem {
     return SwiftRocElem.swiftRocVStackElem(myArr)
 }
 
+/**
+Apparently the host byte order is little-endian on iOS and MacOS.
+This means that the least significant byte comes first.
+I suppose this also explains why the bit representation is reversed?
+
+According to some random info on some Roc example platforms the last three
+bits of the tag pointer define the tag, so, I actually need to read the
+first byte's last three bits in reverse order, except, 0b111 still
+masks the first three bits and when converted to an int, the number is
+what would be expected from non-reversed bits.
+
+Furthermore, if I add an Elem among the tags of Elem tagged union, apparently the
+tag id is now in RocElem's pointer bits.
+
+To get rocElems now, I think I need to remove the last three bits from the pointer somehow.
+
+--
+
+Comment restored for reference - the stuff is working now, I think.
+
+Also, tags are brought in here alphabetically ordered, so in case of tags `A` and
+`B`, `A` = 0 and `B` = 0, an empty tag would be NULL.
+*/
 func getTagId(rocElemPtr: UnsafePointer<RocElem>) -> UInt {
    var bytes = Data(bytes: rocElemPtr, count: MemoryLayout.size(ofValue: rocElemPtr))
    return UInt(bytes[0] & 0b111)
@@ -207,14 +214,8 @@ struct ContentView: View {
 }
 func swiftRocElemToView(elem: SwiftRocElem) -> some View {
     switch elem {
-    case .swiftRocPotatoTextElem(let innerElem):
-        return AnyView(Text(innerElem.schMext).padding())
     case .swiftRocTextElem(let innerElem):
         return AnyView(Text(innerElem.text).padding())
-    case .swiftRocXTextElem(let innerElem):
-        return AnyView(Text(innerElem.ext).padding())
-    case .swiftRocXXTextElem(let innerElem):
-        return AnyView(Text(innerElem.sext).padding())
     case .swiftRocVStackElem(let innerElems):
         return AnyView(swiftRocElemToView2(elems: innerElems))
     }

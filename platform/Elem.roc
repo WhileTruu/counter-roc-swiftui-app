@@ -8,7 +8,7 @@ interface Elem
   imports []
 
 Elem : [
-    PotatoTextElem { schMext : Str, poop : F32 },
+    PotatoTextElem { schMext : Str },
     TextElem { text : Str },
     VStackElem (List Elem),
     XTextElem { ext : Str },
@@ -24,14 +24,14 @@ text = \str ->
     else if Str.countGraphemes str == 3 then
         XXTextElem {sext : str}
     else
-        PotatoTextElem { schMext : str, poop : 2 }
+        PotatoTextElem { schMext : str }
 
 potatoText : Str -> Elem
 potatoText = \str ->
     if Str.countGraphemes str < 5 then
         TextElem { text : str }
     else
-        PotatoTextElem { schMext : str, poop : 2 }
+        PotatoTextElem { schMext : str }
 
 vStack : List Elem -> Elem
 vStack = \elems ->
