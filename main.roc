@@ -1,10 +1,10 @@
 app "calculator-swiftui-app"
     packages { pf: "platform/main.roc" }
     imports [pf.Elem.{ Elem }]
-    provides [main] to pf
+    provides [program] to pf
 
-main : Str -> Elem
-main = \a ->
+program : Str -> Elem
+program = \a ->
     Elem.vStack [
         Elem.hStack [
             Elem.text "\(a)",

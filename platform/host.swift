@@ -4,7 +4,7 @@ import SwiftUI
 // MARK: Roc memory
 
 @_cdecl("roc_alloc")
-func rocAlloc(size: Int, _alignment: UInt) -> UInt  {
+func rocAlloc(size: Int, _alignment: UInt) -> UInt {
     guard let ptr = malloc(size) else {
         return 0
     }
@@ -12,7 +12,7 @@ func rocAlloc(size: Int, _alignment: UInt) -> UInt  {
 }
 
 @_cdecl("roc_dealloc")
-func rocDealloc(ptr: UInt, _alignment: UInt)  {
+func rocDealloc(ptr: UInt, _alignment: UInt) {
     free(UnsafeMutableRawPointer(bitPattern: ptr))
 }
 
@@ -61,9 +61,9 @@ func getRocStr(swiftStr: String) -> RocStr {
     let newString = strdup(swiftStr)
 
     return RocStr(
-        bytes: newString,
-        len: swiftStr.lengthOfBytes(using: String.Encoding.utf8),
-        capacity: swiftStr.lengthOfBytes(using: String.Encoding.utf8)
+            bytes: newString,
+            len: swiftStr.lengthOfBytes(using: String.Encoding.utf8),
+            capacity: swiftStr.lengthOfBytes(using: String.Encoding.utf8)
     )
 }
 
@@ -156,8 +156,8 @@ Also, tags are brought in here alphabetically ordered, so in case of tags `A` an
 `B`, `A` = 0 and `B` = 0, an empty tag would be NULL.
 */
 func getTagId<T>(ptr: UnsafePointer<T>) -> UInt {
-   let bytes = Data(bytes: ptr, count: MemoryLayout.size(ofValue: ptr))
-   return UInt(bytes[0] & 0b111)
+    let bytes = Data(bytes: ptr, count: MemoryLayout.size(ofValue: ptr))
+    return UInt(bytes[0] & 0b111)
 }
 
 func getRocEntry(ptr: UnsafePointer<RocElem>) -> RocElemEntry {
@@ -178,7 +178,7 @@ struct ContentView: View {
         var argRocStr = getRocStr(swiftStr: "Swif")
         var retRocElem = RocElem()
 
-        roc__mainForHost_1_exposed_generic(&retRocElem, &argRocStr)
+        roc__programForHost_1_exposed_generic(&retRocElem, &argRocStr)
 
         swiftRocElem = withUnsafePointer(to: retRocElem) { ptr in
             return swiftRocElemFromPointer(ptr: ptr)

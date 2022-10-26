@@ -29,7 +29,7 @@ struct RocElem {
     union RocElemEntry *entry;
 };
 
-extern void roc__mainForHost_1_exposed_generic(
+extern void roc__programForHost_1_exposed_generic(
     const struct RocElem *ret,
     const struct RocStr *arg
 );
