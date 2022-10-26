@@ -29,7 +29,18 @@ struct RocElem {
     union RocElemEntry *entry;
 };
 
-extern void roc__programForHost_1_exposed_generic(
-    const struct RocElem *ret,
-    const struct RocStr *arg
+typedef void* Model;
+
+extern void roc__programForHost_1_exposed_generic();
+
+extern void roc__programForHost_1__Init_caller(
+    const struct RocStr *arg,
+    void *closure,
+    void *ret
+);
+
+extern void roc__programForHost_1__Render_caller(
+    void *arg,
+    void *closure,
+    const struct RocElem *ret
 );

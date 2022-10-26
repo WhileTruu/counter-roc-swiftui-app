@@ -176,9 +176,21 @@ struct ContentView: View {
 
     init() {
         var argRocStr = getRocStr(swiftStr: "Swif")
+        var closure = UnsafeMutableRawPointer.allocate(
+            byteCount: MemoryLayout<UInt>.stride,
+            alignment: MemoryLayout<UInt>.alignment
+        )
+        var retModel = UnsafeMutableRawPointer.allocate(
+            byteCount: MemoryLayout<UInt>.stride,
+            alignment: MemoryLayout<UInt>.alignment
+        )
+
         var retRocElem = RocElem()
 
-        roc__programForHost_1_exposed_generic(&retRocElem, &argRocStr)
+        roc__programForHost_1__Init_caller(&argRocStr, &closure, &retModel)
+
+        roc__programForHost_1__Render_caller(&retModel, &closure, &retRocElem)
+
 
         swiftRocElem = withUnsafePointer(to: retRocElem) { ptr in
             return swiftRocElemFromPointer(ptr: ptr)

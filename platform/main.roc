@@ -1,9 +1,14 @@
 platform "swiftui-platform"
-    requires {} { program : Str -> Elem }
+    requires { Model } { program : _ }
     exposes []
     packages {}
     imports [Elem.{ Elem }]
     provides [programForHost]
 
-programForHost : Box Str -> Elem
-programForHost = \a -> program (Box.unbox a)
+programForHost : {
+    init : (Str -> Model) as Init,
+    render : (Model -> Elem) as Render,
+}
+programForHost = program
+
+

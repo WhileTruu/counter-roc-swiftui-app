@@ -3,17 +3,24 @@ app "calculator-swiftui-app"
     imports [pf.Elem.{ Elem }]
     provides [program] to pf
 
-program : Str -> Elem
-program = \a ->
+Model : { text : Str }
+
+init : Str -> Model
+init = \a -> { text : a |> Str.concat " - hello I am init" }
+
+render : Model -> Elem
+render = \model ->
     Elem.vStack [
         Elem.hStack [
-            Elem.text "\(a)",
-            Elem.text "\(a)",
+            Elem.text "\(model.text)",
+            Elem.text "\(model.text)",
             Elem.text "YEA BOIII",
         ],
         Elem.hStack [
-            Elem.text "\(a)",
-            Elem.text "\(a)",
+            Elem.text "\(model.text)",
+            Elem.text "\(model.text)",
             Elem.text "YEA BOIII",
         ],
     ]
+
+program = { init, render }
