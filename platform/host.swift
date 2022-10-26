@@ -96,11 +96,11 @@ func swiftRocElemFromPointer(ptr: UnsafePointer<RocElem>) -> SwiftRocElem {
 
     switch tagId {
     case 0:
-        elem = entryToSwiftRocVStackElem2(rocList: entry.stackElem.children)
+        elem = entryToSwiftRocHStackElem(entry: entry)
     case 1:
         elem = SwiftRocElem.swiftRocTextElem(SwiftRocTextElem(text: getSwiftStr(rocStr: entry.textElem.text)))
     case 2:
-        elem = entryToSwiftRocVStackElem2(rocList: entry.stackElem.children)
+        elem = entryToSwiftRocVStackElem(entry: entry)
     default:
         elem = nil
     }
@@ -108,15 +108,24 @@ func swiftRocElemFromPointer(ptr: UnsafePointer<RocElem>) -> SwiftRocElem {
     return elem!
 }
 
-func entryToSwiftRocVStackElem2(rocList: RocList) -> SwiftRocElem {
-    let array: Array<SwiftRocElem> = rocListToSwiftArray(rocList: rocList, swiftRocElemFromPointer)
+func entryToSwiftRocVStackElem(entry: RocElemEntry) -> SwiftRocElem {
+    let elems = entry.stackElem.children
+    let array: Array<SwiftRocElem> = rocListToSwiftArray(rocList: elems, swiftRocElemFromPointer)
 
     return SwiftRocElem.swiftRocVStackElem(array)
+}
+
+func entryToSwiftRocHStackElem(entry: RocElemEntry) -> SwiftRocElem {
+    let elems = entry.stackElem.children
+    let array: Array<SwiftRocElem> = rocListToSwiftArray(rocList: elems, swiftRocElemFromPointer)
+
+    return SwiftRocElem.swiftRocHStackElem(array)
 }
 
 enum SwiftRocElem {
     case swiftRocTextElem(SwiftRocTextElem)
     case swiftRocVStackElem(Array<SwiftRocElem>)
+    case swiftRocHStackElem(Array<SwiftRocElem>)
 }
 
 struct SwiftRocTextElem {
@@ -187,6 +196,8 @@ func swiftRocElemToView(elem: SwiftRocElem) -> some View {
         return AnyView(Text(innerElem.text).padding())
     case .swiftRocVStackElem(let innerElems):
         return AnyView(swiftRocElemsToVStack(elems: innerElems))
+    case .swiftRocHStackElem(let innerElems):
+        return AnyView(swiftRocElemsToHStack(elems: innerElems))
     }
 }
 
@@ -198,6 +209,13 @@ func swiftRocElemsToVStack(elems: Array<SwiftRocElem>) -> some View {
     }
 }
 
+func swiftRocElemsToHStack(elems: Array<SwiftRocElem>) -> some View {
+    HStack(alignment: .top) {
+        ForEach(elems.indices, id: \.self) { i in
+            swiftRocElemToView(elem: elems[i])
+        }
+    }
+}
 
 // MARK: Main
 
