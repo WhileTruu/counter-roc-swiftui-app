@@ -143,16 +143,12 @@ first byte's last three bits in reverse order, except, 0b111 still
 masks the first three bits and when converted to an int, the number is
 what would be expected from non-reversed bits.
 
-Furthermore, if I add an Elem among the tags of Elem tagged union, apparently the
-tag id is now in RocElem's pointer bits.
+Furthermore, if I add an Elem among the tags of Elem tagged union, the
+tag id is now in RocElem's pointer bits. The data structure with the pointer with
+the three significant bits appeared to change when the tag union's tags contained
+itself. It's also likely that I misunderstood this while hacking around with pointers.
 
-To get rocElems now, I think I need to remove the last three bits from the pointer somehow.
-
---
-
-Comment restored for reference - the stuff is working now, I think.
-
-Also, tags are brought in here alphabetically ordered, so in case of tags `A` and
+Tags are brought in here alphabetically ordered, so in case of tags `A` and
 `B`, `A` = 0 and `B` = 0, an empty tag would be NULL.
 */
 func getTagId<T>(ptr: UnsafePointer<T>) -> UInt {
@@ -160,6 +156,14 @@ func getTagId<T>(ptr: UnsafePointer<T>) -> UInt {
     return UInt(bytes[0] & 0b111)
 }
 
+/**
+Last three bits of the elem pointer need to be removed to get another elem pointer
+that actually points to the entry.
+
+Maybe a lot of pain could be avoided if the initial pointer weren't considered a
+RocElem pointer.
+Or perhaps the weirdness is due to the way Swift imports stuff from the header file.
+*/
 func getRocEntry(ptr: UnsafePointer<RocElem>) -> RocElemEntry {
     var bytes = Data(bytes: ptr, count: MemoryLayout.size(ofValue: ptr))
     bytes[0] = bytes[0] & ~0b111
