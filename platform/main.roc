@@ -1,5 +1,5 @@
 platform "swiftui-platform"
-    requires { Model } { program : _ }
+    requires { Model, Msg } { program : _ }
     exposes []
     packages {}
     imports [Elem.{ Elem }]
@@ -7,7 +7,8 @@ platform "swiftui-platform"
 
 programForHost : {
     init : (Str -> Model) as Init,
-    render : (Model -> Elem) as Render,
+    update : (Model, Msg -> Model) as Update,
+    render : (Model -> Elem Msg) as Render,
 }
 programForHost = program
 

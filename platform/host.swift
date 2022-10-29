@@ -96,10 +96,17 @@ func swiftRocElemFromPointer(ptr: UnsafePointer<RocElem>) -> SwiftRocElem {
 
     switch tagId {
     case 0:
-        elem = entryToSwiftRocHStackElem(entry: entry)
+        elem = SwiftRocElem.swiftRocButtonElem(
+            SwiftRocButtonElem(
+                label: getSwiftStr(rocStr: entry.buttonElem.label),
+                onClick: entry.buttonElem.onClick
+            )
+        )
     case 1:
-        elem = SwiftRocElem.swiftRocTextElem(SwiftRocTextElem(text: getSwiftStr(rocStr: entry.textElem.text)))
+        elem = entryToSwiftRocHStackElem(entry: entry)
     case 2:
+        elem = SwiftRocElem.swiftRocTextElem(SwiftRocTextElem(text: getSwiftStr(rocStr: entry.textElem.text)))
+    case 3:
         elem = entryToSwiftRocVStackElem(entry: entry)
     default:
         elem = nil
@@ -123,6 +130,7 @@ func entryToSwiftRocHStackElem(entry: RocElemEntry) -> SwiftRocElem {
 }
 
 enum SwiftRocElem {
+    case swiftRocButtonElem(SwiftRocButtonElem)
     case swiftRocTextElem(SwiftRocTextElem)
     case swiftRocVStackElem(Array<SwiftRocElem>)
     case swiftRocHStackElem(Array<SwiftRocElem>)
@@ -130,6 +138,11 @@ enum SwiftRocElem {
 
 struct SwiftRocTextElem {
     var text: String
+}
+
+struct SwiftRocButtonElem {
+    var label: String
+    var onClick: UnsafeRawPointer?
 }
 
 /**
@@ -175,8 +188,10 @@ func getRocEntry(ptr: UnsafePointer<RocElem>) -> RocElemEntry {
 
 // MARK: View
 
-struct ContentView: View {
-    var swiftRocElem: SwiftRocElem
+class AppState: ObservableObject {
+    @Published private(set) var swiftRocElem: SwiftRocElem
+
+    private var model: UnsafeMutableRawPointer
 
     init() {
         var argRocStr = getRocStr(swiftStr: "Swif")
@@ -184,51 +199,123 @@ struct ContentView: View {
             byteCount: MemoryLayout<UInt>.stride,
             alignment: MemoryLayout<UInt>.alignment
         )
-        var retModel = UnsafeMutableRawPointer.allocate(
+        self.model = UnsafeMutableRawPointer.allocate(
             byteCount: MemoryLayout<UInt>.stride,
             alignment: MemoryLayout<UInt>.alignment
         )
 
         var retRocElem = RocElem()
 
-        roc__programForHost_1__Init_caller(&argRocStr, &closure, &retModel)
+        roc__programForHost_1__Init_caller(&argRocStr, &closure, &self.model)
+        roc__programForHost_1__Render_caller(&self.model, &closure, &retRocElem)
 
-        roc__programForHost_1__Render_caller(&retModel, &closure, &retRocElem)
-
-
-        swiftRocElem = withUnsafePointer(to: retRocElem) { ptr in
+        self.swiftRocElem = withUnsafePointer(to: retRocElem) { ptr in
             return swiftRocElemFromPointer(ptr: ptr)
         }
     }
 
-    var body: some View {
-        swiftRocElemToView(elem: self.swiftRocElem)
-    }
-}
+    func update(_ msgPtr: UnsafeRawPointer?) {
+        var retRocElem = RocElem()
 
-func swiftRocElemToView(elem: SwiftRocElem) -> some View {
-    switch elem {
-    case .swiftRocTextElem(let innerElem):
-        return AnyView(Text(innerElem.text).padding())
-    case .swiftRocVStackElem(let innerElems):
-        return AnyView(swiftRocElemsToVStack(elems: innerElems))
-    case .swiftRocHStackElem(let innerElems):
-        return AnyView(swiftRocElemsToHStack(elems: innerElems))
-    }
-}
+        var closure = UnsafeMutableRawPointer.allocate(
+            byteCount: MemoryLayout<UInt>.stride,
+            alignment: MemoryLayout<UInt>.alignment
+        )
 
-func swiftRocElemsToVStack(elems: Array<SwiftRocElem>) -> some View {
-    VStack(alignment: .leading) {
-        ForEach(elems.indices, id: \.self) { i in
-            swiftRocElemToView(elem: elems[i])
+        var retModel = UnsafeMutableRawPointer.allocate(
+            byteCount: MemoryLayout<UInt>.stride,
+            alignment: MemoryLayout<UInt>.alignment
+        )
+
+        withUnsafePointer(to: msgPtr) { ptr in
+            print(ptr)
+            roc__programForHost_1__Update_caller(&self.model, ptr, &closure, &retModel)
+
+
+        }
+
+
+
+        print("hello2")
+        roc__programForHost_1__Render_caller(&retModel, &closure, &retRocElem)
+
+        print("hello3")
+        // }
+
+        self.model = retModel
+
+        self.swiftRocElem = withUnsafePointer(to: retRocElem) { ptr in
+            return swiftRocElemFromPointer(ptr: ptr)
         }
     }
 }
 
-func swiftRocElemsToHStack(elems: Array<SwiftRocElem>) -> some View {
+struct ContentView: View {
+    @ObservedObject var appState = AppState()
+
+    init() {
+    }
+
+    var body: some View {
+        swiftRocElemToView(elem: self.appState.swiftRocElem, action: { actionPtr in
+            appState.update(actionPtr)
+            /* var argRocStr = getRocStr(swiftStr: "Swif")
+            var retRocElem = RocElem()
+
+            roc__programForHost_1__Init_caller(&argRocStr, &closure, &retModel)
+            roc__programForHost_1__Render_caller(&retModel, &closure, &retRocElem)
+
+            swiftRocElem = withUnsafePointer(to: retRocElem) { ptr in
+                return swiftRocElemFromPointer(ptr: ptr)
+            }
+            --
+            var retRocElem = RocElem()
+
+
+            var bytes = Data(bytes: ptr, count: MemoryLayout.size(ofValue: ptr))
+            bytes[0] = bytes[0] & ~0b111
+
+            bytes.withUnsafeBytes { myPtr in
+                roc__programForHost_1__Update_caller(myPtr as! UnsafeMutableRawPointer, &closure, &retModel)
+
+                roc__programForHost_1__Render_caller(&retModel, &closure, &retRocElem)
+            }
+
+
+            swiftRocElem = withUnsafePointer(to: retRocElem) { ptr2 in
+                return swiftRocElemFromPointer(ptr: ptr2)
+            }*/
+        })
+    }
+}
+
+func swiftRocElemToView(elem: SwiftRocElem, action: @escaping (UnsafeRawPointer?) -> Void) -> some View {
+    switch elem {
+    case .swiftRocButtonElem(var innerElem):
+        return AnyView(Button(innerElem.label, action: {
+            action(innerElem.onClick)
+        }).padding())
+    case .swiftRocTextElem(let innerElem):
+        return AnyView(Text(innerElem.text).padding())
+    case .swiftRocVStackElem(let innerElems):
+        return AnyView(swiftRocElemsToVStack(elems: innerElems, action: action))
+    case .swiftRocHStackElem(let innerElems):
+        return AnyView(swiftRocElemsToHStack(elems: innerElems, action: action))
+    }
+}
+
+func swiftRocElemsToVStack(elems: Array<SwiftRocElem>, action: @escaping (UnsafeRawPointer?) -> Void) -> some View {
+    VStack(alignment: .leading) {
+        ForEach(elems.indices, id: \.self) { i in
+            swiftRocElemToView(elem: elems[i], action: action)
+        }
+    }
+}
+
+func swiftRocElemsToHStack(elems: Array<SwiftRocElem>, action: @escaping (UnsafeRawPointer?) -> Void) -> some View {
     HStack(alignment: .top) {
         ForEach(elems.indices, id: \.self) { i in
-            swiftRocElemToView(elem: elems[i])
+            swiftRocElemToView(elem: elems[i], action: action)
         }
     }
 }
