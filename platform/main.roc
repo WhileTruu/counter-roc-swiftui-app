@@ -11,5 +11,3 @@ programForHost : {
     view : (Model -> Elem Msg) as View,
 }
 programForHost = program
-
-

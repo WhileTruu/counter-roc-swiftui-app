@@ -3,14 +3,10 @@ app "calculator-swiftui-app"
     imports [pf.Elem.{ Elem }]
     provides [program] to pf
 
-# MODEL
-
 Model : { text : Str, count : F32 }
 
 init : Str -> Model
-init = \a -> { text : a, count : 0 }
-
-# UPDATE
+init = \a -> { text: a, count: 0 }
 
 Msg : [
     Increment,
@@ -20,10 +16,8 @@ Msg : [
 update : Model, Msg -> Model
 update = \model, msg ->
     when msg is
-        Increment -> { model & count : model.count + 1 }
-        Decrement -> { model & count : model.count - 1 }
-
-# VIEW
+        Increment -> { model & count: model.count + 1 }
+        Decrement -> { model & count: model.count - 1 }
 
 view : Model -> Elem Msg
 view = \model ->
@@ -31,13 +25,11 @@ view = \model ->
 
     Elem.vStack [
         Elem.text model.text,
-        Elem.button { label : "+1", onClick : Increment },
+        Elem.button { label: "+1", onClick: Increment },
         Elem.hStack [
             Elem.text "count: \(strVal)",
         ],
-        Elem.button { label : "-1", onClick : Decrement },
+        Elem.button { label: "-1", onClick: Decrement },
     ]
-
-# PROGRAM
 
 program = { init, update, view }

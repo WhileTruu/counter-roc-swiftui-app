@@ -1,12 +1,12 @@
 interface Elem
-  exposes [
-    Elem,
-    hStack,
-    text,
-    vStack,
-    button,
-  ]
-  imports []
+    exposes [
+        Elem,
+        hStack,
+        text,
+        vStack,
+        button,
+    ]
+    imports []
 
 Elem msg : [
     Button { label : Str, onClick : msg },
@@ -17,7 +17,7 @@ Elem msg : [
 
 text : Str -> Elem msg
 text = \str ->
-    TextElem {text : str}
+    TextElem { text: str }
 
 vStack : List (Elem msg) -> Elem msg
 vStack = \elems ->
@@ -29,4 +29,4 @@ hStack = \elems ->
 
 button : { label : Str, onClick : msg } -> Elem msg
 button = \{ label, onClick } ->
-    Button { label : label, onClick : onClick }
+    Button { label: label, onClick: onClick }
