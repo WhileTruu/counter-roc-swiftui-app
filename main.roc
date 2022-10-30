@@ -1,4 +1,4 @@
-app "calculator-swiftui-app"
+app "counter-swiftui-app"
     packages { pf: "platform/main.roc" }
     imports [pf.Elem.{ Elem }]
     provides [program] to pf
