@@ -191,64 +191,72 @@ func getRocEntry(ptr: UnsafePointer<RocElem>) -> RocElemEntry {
 class AppState: ObservableObject {
     @Published private(set) var swiftRocElem: SwiftRocElem
 
-    private var model: UnsafeMutableRawPointer
+    private var model: Model
 
     init() {
-        var argRocStr = getRocStr(swiftStr: "Swif")
-        var closure = UnsafeMutableRawPointer.allocate(
-            byteCount: MemoryLayout<UInt>.stride,
-            alignment: MemoryLayout<UInt>.alignment
-        )
-        self.model = UnsafeMutableRawPointer.allocate(
-            byteCount: MemoryLayout<UInt>.stride,
-            alignment: MemoryLayout<UInt>.alignment
-        )
-
-        var retRocElem = RocElem()
-
-        roc__programForHost_1__Init_caller(&argRocStr, &closure, &self.model)
-        roc__programForHost_1__Render_caller(&self.model, &closure, &retRocElem)
-
-        self.swiftRocElem = withUnsafePointer(to: retRocElem) { ptr in
-            return swiftRocElemFromPointer(ptr: ptr)
-        }
+        self.model = initRocProgram()
+        self.swiftRocElem = renderRocProgram(self.model)
     }
 
     func update(_ msgPtr: UnsafeRawPointer?) {
-        var retRocElem = RocElem()
-
-        var closure = UnsafeMutableRawPointer.allocate(
-            byteCount: MemoryLayout<UInt>.stride,
-            alignment: MemoryLayout<UInt>.alignment
-        )
-
-        var retModel = UnsafeMutableRawPointer.allocate(
-            byteCount: MemoryLayout<UInt>.stride,
-            alignment: MemoryLayout<UInt>.alignment
-        )
-
-        withUnsafePointer(to: msgPtr) { ptr in
-            print(ptr)
-            roc__programForHost_1__Update_caller(&self.model, ptr, &closure, &retModel)
-
-
-        }
-
-
-
-        print("hello2")
-        roc__programForHost_1__Render_caller(&retModel, &closure, &retRocElem)
-
-        print("hello3")
-        // }
-
-        self.model = retModel
-
-        self.swiftRocElem = withUnsafePointer(to: retRocElem) { ptr in
-            return swiftRocElemFromPointer(ptr: ptr)
-        }
+        self.model = updateRocProgram(self.model)
+        self.swiftRocElem = renderRocProgram(self.model)
     }
 }
+
+func initRocProgram() -> Model {
+    var argRocStr = getRocStr(swiftStr: "Swif")
+    var closure = UnsafeMutableRawPointer.allocate(
+        byteCount: Int(roc__programForHost_1__Init_size()),
+        alignment: Int(roc__programForHost_1__Init_size())
+    )
+    var model = Model.allocate(
+        byteCount: Int(roc__programForHost_1__Init_result_size()),
+        alignment: Int(roc__programForHost_1__Init_result_size())
+    )
+
+    roc__programForHost_1__Init_caller(&argRocStr, closure, model)
+
+    closure.deallocate()
+
+    return model
+}
+
+func updateRocProgram(_ model: Model) -> Model {
+    var argRocStr = getRocStr(swiftStr: "Swif")
+    var closure = UnsafeMutableRawPointer.allocate(
+        byteCount: Int(roc__programForHost_1__Update_size()),
+        alignment: Int(roc__programForHost_1__Update_size())
+    )
+    var returnModel = Model.allocate(
+        byteCount: Int(roc__programForHost_1__Update_result_size()),
+        alignment: Int(roc__programForHost_1__Update_result_size())
+    )
+
+    roc__programForHost_1__Update_caller(model, closure, returnModel)
+
+    closure.deallocate()
+
+    return returnModel
+}
+
+func renderRocProgram(_ model: Model) -> SwiftRocElem {
+    var retRocElem = RocElem()
+    var closure = UnsafeMutableRawPointer.allocate(
+        byteCount: Int(roc__programForHost_1__Render_size()),
+        alignment: Int(roc__programForHost_1__Render_size())
+    )
+
+    roc__programForHost_1__Render_caller(model, &closure, &retRocElem)
+
+    closure.deallocate()
+
+    return withUnsafePointer(to: retRocElem) { ptr in
+        return swiftRocElemFromPointer(ptr: ptr)
+    }
+}
+
+
 
 struct ContentView: View {
     @ObservedObject var appState = AppState()
@@ -259,32 +267,6 @@ struct ContentView: View {
     var body: some View {
         swiftRocElemToView(elem: self.appState.swiftRocElem, action: { actionPtr in
             appState.update(actionPtr)
-            /* var argRocStr = getRocStr(swiftStr: "Swif")
-            var retRocElem = RocElem()
-
-            roc__programForHost_1__Init_caller(&argRocStr, &closure, &retModel)
-            roc__programForHost_1__Render_caller(&retModel, &closure, &retRocElem)
-
-            swiftRocElem = withUnsafePointer(to: retRocElem) { ptr in
-                return swiftRocElemFromPointer(ptr: ptr)
-            }
-            --
-            var retRocElem = RocElem()
-
-
-            var bytes = Data(bytes: ptr, count: MemoryLayout.size(ofValue: ptr))
-            bytes[0] = bytes[0] & ~0b111
-
-            bytes.withUnsafeBytes { myPtr in
-                roc__programForHost_1__Update_caller(myPtr as! UnsafeMutableRawPointer, &closure, &retModel)
-
-                roc__programForHost_1__Render_caller(&retModel, &closure, &retRocElem)
-            }
-
-
-            swiftRocElem = withUnsafePointer(to: retRocElem) { ptr2 in
-                return swiftRocElemFromPointer(ptr: ptr2)
-            }*/
         })
     }
 }

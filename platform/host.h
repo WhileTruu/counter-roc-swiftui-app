@@ -35,23 +35,31 @@ struct RocElem {
     union RocElemEntry *entry;
 };
 
+
+// PROGRAM
+
 extern void roc__programForHost_1_exposed_generic();
+extern int64_t roc__programForHost_size();
 
-extern void roc__programForHost_1__Init_caller(
-    const struct RocStr *arg,
-    void *closure,
-    void *ret
-);
+// MODEL
 
-extern void roc__programForHost_1__Update_caller(
-    const void *model,
-    const void *msg,
-    void *closure,
-    void *ret
-);
+typedef void* Model;
+
+extern void roc__programForHost_1__Init_caller(const struct RocStr *arg, void *closure, Model ret);
+extern int64_t roc__programForHost_1__Init_size();
+extern int64_t roc__programForHost_1__Init_result_size();
+
+// UPDATE
+
+extern void roc__programForHost_1__Update_caller(const Model model, void *closure, Model ret);
+extern int64_t roc__programForHost_1__Update_result_size();
+extern int64_t roc__programForHost_1__Update_size();
+
+// VIEW
 
 extern void roc__programForHost_1__Render_caller(
-    const void *arg,
+    const Model model,
     void *closure,
     struct RocElem *ret
 );
+extern int64_t roc__programForHost_1__Render_size();

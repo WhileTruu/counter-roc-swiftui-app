@@ -7,7 +7,7 @@ platform "swiftui-platform"
 
 programForHost : {
     init : (Str -> Model) as Init,
-    update : (Model, Msg -> Model) as Update,
+    update : (Model -> Model) as Update,
     render : (Model -> Elem Msg) as Render,
 }
 programForHost = program
