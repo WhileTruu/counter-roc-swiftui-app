@@ -51,7 +51,12 @@ extern int64_t roc__programForHost_1__Init_result_size();
 
 // UPDATE
 
-extern void roc__programForHost_1__Update_caller(const Model model, void *closure, Model ret);
+extern void roc__programForHost_1__Update_caller(
+    const Model model,
+    const void *msg,
+    void *closure,
+    Model ret
+);
 extern int64_t roc__programForHost_1__Update_result_size();
 extern int64_t roc__programForHost_1__Update_size();
 

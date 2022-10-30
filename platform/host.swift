@@ -199,13 +199,13 @@ class AppState: ObservableObject {
     }
 
     func update(_ msgPtr: UnsafeRawPointer?) {
-        self.model = updateRocProgram(self.model)
+        self.model = withUnsafePointer(to: msgPtr) { return updateRocProgram(self.model, $0) }
         self.swiftRocElem = renderRocProgram(self.model)
     }
 }
 
 func initRocProgram() -> Model {
-    var argRocStr = getRocStr(swiftStr: "Swif")
+    var argRocStr = getRocStr(swiftStr: "Hello from Swift! :)")
     var closure = UnsafeMutableRawPointer.allocate(
         byteCount: Int(roc__programForHost_1__Init_size()),
         alignment: Int(roc__programForHost_1__Init_size())
@@ -222,8 +222,7 @@ func initRocProgram() -> Model {
     return model
 }
 
-func updateRocProgram(_ model: Model) -> Model {
-    var argRocStr = getRocStr(swiftStr: "Swif")
+func updateRocProgram(_ model: Model, _ msg: UnsafeRawPointer) -> Model {
     var closure = UnsafeMutableRawPointer.allocate(
         byteCount: Int(roc__programForHost_1__Update_size()),
         alignment: Int(roc__programForHost_1__Update_size())
@@ -233,7 +232,7 @@ func updateRocProgram(_ model: Model) -> Model {
         alignment: Int(roc__programForHost_1__Update_result_size())
     )
 
-    roc__programForHost_1__Update_caller(model, closure, returnModel)
+    roc__programForHost_1__Update_caller(model, msg, closure, returnModel)
 
     closure.deallocate()
 

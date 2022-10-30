@@ -5,10 +5,10 @@ app "calculator-swiftui-app"
 
 # MODEL
 
-Model : { text : Str, val : I64 }
+Model : { text : Str, count : F32 }
 
 init : Str -> Model
-init = \a -> { text : a |> Str.concat " - hello I am init", val : 0 }
+init = \a -> { text : a, count : 0 }
 
 # UPDATE
 
@@ -17,22 +17,23 @@ Msg : [
     Decrement,
 ]
 
-update : Model -> Model
-update = \model ->
-     { model & text : "+1 \(model.text)" }
+update : Model, Msg -> Model
+update = \model, msg ->
+    when msg is
+        Increment -> { model & count : model.count + 1 }
+        Decrement -> { model & count : model.count - 1 }
 
 # RENDER
 
 render : Model -> Elem Msg
 render = \model ->
-    strVal = Num.toStr model.val
+    strVal = Num.toStr model.count
 
     Elem.vStack [
+        Elem.text model.text,
         Elem.button { label : "+1", onClick : Increment },
         Elem.hStack [
-            Elem.text "value: ",
-            Elem.text "\(model.text) \(strVal)",
-            Elem.text "YEA BOIII",
+            Elem.text "count: \(strVal)",
         ],
         Elem.button { label : "-1", onClick : Decrement },
     ]
