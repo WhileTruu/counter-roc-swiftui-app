@@ -23,10 +23,10 @@ update = \model, msg ->
         Increment -> { model & count : model.count + 1 }
         Decrement -> { model & count : model.count - 1 }
 
-# RENDER
+# VIEW
 
-render : Model -> Elem Msg
-render = \model ->
+view : Model -> Elem Msg
+view = \model ->
     strVal = Num.toStr model.count
 
     Elem.vStack [
@@ -40,4 +40,4 @@ render = \model ->
 
 # PROGRAM
 
-program = { init, update, render }
+program = { init, update, view }

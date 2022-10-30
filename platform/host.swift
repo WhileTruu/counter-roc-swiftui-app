@@ -242,11 +242,11 @@ func updateRocProgram(_ model: Model, _ msg: UnsafeRawPointer) -> Model {
 func renderRocProgram(_ model: Model) -> SwiftRocElem {
     var retRocElem = RocElem()
     var closure = UnsafeMutableRawPointer.allocate(
-        byteCount: Int(roc__programForHost_1__Render_size()),
-        alignment: Int(roc__programForHost_1__Render_size())
+        byteCount: Int(roc__programForHost_1__View_size()),
+        alignment: Int(roc__programForHost_1__View_size())
     )
 
-    roc__programForHost_1__Render_caller(model, &closure, &retRocElem)
+    roc__programForHost_1__View_caller(model, &closure, &retRocElem)
 
     closure.deallocate()
 

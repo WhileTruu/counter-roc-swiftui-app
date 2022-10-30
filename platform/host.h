@@ -62,9 +62,9 @@ extern int64_t roc__programForHost_1__Update_size();
 
 // VIEW
 
-extern void roc__programForHost_1__Render_caller(
+extern void roc__programForHost_1__View_caller(
     const Model model,
     void *closure,
     struct RocElem *ret
 );
-extern int64_t roc__programForHost_1__Render_size();
+extern int64_t roc__programForHost_1__View_size();
