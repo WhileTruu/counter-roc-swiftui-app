@@ -1,4 +1,6 @@
 SwiftUIDemo.app
-calculator-swiftui-app
+counter-swiftui-app
 platform/host.o
 .idea
+.envrc
+.direnv
