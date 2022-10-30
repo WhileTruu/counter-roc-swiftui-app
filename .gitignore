@@ -4,3 +4,4 @@ platform/host.o
 .idea
 .envrc
 .direnv
+.DS_Store
